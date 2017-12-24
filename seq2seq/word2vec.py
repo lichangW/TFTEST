@@ -5,12 +5,27 @@ import pickle
 
 logging.basicConfig(level=logging.DEBUG,stream=logging.StreamHandler)
 
+PARAGRAPH_MARK='E'
+CONV_MARK='M'
+
+
 convs_path = "/Users/cj/workspace/TFTEST/seq2seq/chinese2english/dgk_lost_conv/results"
 vocab_list = "data/vocab.list"
+
 
 class vocabConverter(object):
 
     def __init__(self,source_files, vocab_list_file, vocab_size):
+
+        self._vocab = None
+        self._vocab = None
+        self._convs = None
+        self._word2code = None
+        self._code2word = None
+
+        self.__init(self,source_files, vocab_list_file, vocab_size)
+
+    def __init(self,source_files, vocab_list_file, vocab_size):
 
         if not os.path.exists(convs_path):
             logging.error("convs not exists!")
@@ -25,7 +40,10 @@ class vocabConverter(object):
                 cfile = codecs.open(conv, mode="r", encoding="utf-8")
                 text = cfile.read(1e6)
                 while len(text) > 0:
+                    text.strip()
                     for word in text:
+                        if word == PARAGRAPH_MARK or word == CONV_MARK:
+                            continue
                         if vob_count.get(word,0)==0:
                             vob_count[word]=1
                             continue
@@ -55,15 +73,31 @@ class vocabConverter(object):
 
     def vord2code(self,word):
 
+        if word in self._word2code:
+            return self._word2code[word]
 
-        pass
-    def code2word(self):
-        pass
+        return len(self._vocab)
+
+    def code2word(self,code):
+
+        if code in self._code2word:
+            return self._code2word[code]
+        return "<unk>"
 
     def text2codes(self,text):
-        pass
+        codes=[]
+        for word in text:
+            codes.append(self._word2code(word))
+        return  codes
+
+    def codes2text(self,codes):
+        text=[]
+        for code in codes:
+            text.append(self._code2word(code))
+        return text
 
     def batch_generator(self,batch_size):
+        #先写网络
         pass
 
 
