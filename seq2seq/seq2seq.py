@@ -18,11 +18,14 @@ class HiCJ(object):
 	    3.encode的输出都被丢弃了，只有在attention-model中才使用(only use encoder_outputs in attention-based models)
     """
 
-    def __init__(self,cell_type,hidden_size,layer_num,vocab_size,data_generator,**high):
-        self.hidden_size=hidden_size
-        self.layer_num=layer_num
+    def __init__(self,vocab_size,data_generator,**encoder_params,**decoder_params,**hyper_params):
+        self.encoder_params = encoder_params  ##  src_embedding_size==src_hidden_size,src_vob_size
+        self.decoder_params = decoder_params  ##  trg_embedding_size==trg_hidden_size,trg_vob_size
+        self.hyper_params = hyper_params      ##
         self.vocab_size=vocab_size
         self.data_generator_fucn=data_generator
+
+        self.default_hidden_size=128
 
     def Training(self):
         pass
@@ -31,46 +34,64 @@ class HiCJ(object):
     def Inference(self):
         pass
     def Build_model(self):
-        pass
-    def _build_encoder(self):
 
-        cell
-        tf.nn.dynamic_rnn()
+        pass
+
+    def _build_encoder(self):
+        embedding_size = self.encoder_params.get("src_hidden_size",self.default_hidden_size)
+        vob_size = self.encoder_params.get("src_vob_size")
+        if vob_size ==0:
+            raise Exception("unknow vob_size")
+        with tf.variable_scope("encoder") as scope:
+            embeddings=tf.get_variable("embedding",[vob_size,embedding_size])
+            encoded_input=tf.nn.embedding_lookup(embeddings,self.inputs)
+            cells = self._build_cells(self.hyper_params)
+            multiCell = tf.contrib.rnn.MultiRNNCell(cells)
+            outputs, state = tf.nn.dynamic_rnn(multiCell,encoded_input,sequence_length=self.input_sequence_length,dtype=tf.dtypes.float32)
+            return outputs,state
 
     def _build_decoder(self):
-        pass
 
-    def _build_cells(self,cell_type,hidden_num,layer_num=1,**kwargs):
+        cells = self._build_cells(self.hyper_paramse)
+        multiCell = tf.contrib.rnn.MultiRNNCell(cells)
+        outputs,state = tf.nn.dynamic_rnn(multiCell)
+        return outputs,state
+
+    def _build_cells(self,**kwargs):
+
+        cell_type = self.encoder_params.get("cell_type","BasicLSTMCell")
+        hidden_size = self.encoder_params.get("src_hidden_size",self.default_hidden_size)
+        layer_num = self.encoder_params.get("src_layer_num",1)
 
         cells=[]
         Cell=None
         if cell_type == "BasicRNNCell":
-            if type(hidden_num) is list and len(hidden_num)==layer_num:
-                cells = [tf.contrib.rnn.BasicRNNCell(num) for num in hidden_num]
+            if type(hidden_size) is list and len(hidden_size)==layer_num:
+                cells = [tf.contrib.rnn.BasicRNNCell(num) for num in hidden_size]
             else:
-                cells = [tf.contrib.rnn.BasicRNNCell(hidden_num) for num in xrange(layer_num) ]
+                cells = [tf.contrib.rnn.BasicRNNCell(hidden_size) for num in xrange(layer_num) ]
         elif  cell_type == "BasicLSTMCell":
-            if type(hidden_num) is list and len(hidden_num)==layer_num:
-                cells = [tf.contrib.rnn.BasicLSTMCell(num) for num in hidden_num]
+            if type(hidden_size) is list and len(hidden_size)==layer_num:
+                cells = [tf.contrib.rnn.BasicLSTMCell(num) for num in hidden_size]
             else:
-                cells = [tf.contrib.rnn.BasicLSTMCell(hidden_num) for num in xrange(layer_num) ]
+                cells = [tf.contrib.rnn.BasicLSTMCell(hidden_size) for num in xrange(layer_num) ]
 
         elif cell_type == "GRUCell":
-            if type(hidden_num) is list and len(hidden_num)==layer_num:
-                cells = [tf.contrib.rnn.GRUCell(num) for num in hidden_num]
+            if type(hidden_size) is list and len(hidden_size)==layer_num:
+                cells = [tf.contrib.rnn.GRUCell(num) for num in hidden_size]
             else:
-                cells = [tf.contrib.rnn.GRUCell(hidden_num) for num in xrange(layer_num) ]
+                cells = [tf.contrib.rnn.GRUCell(hidden_size) for num in xrange(layer_num) ]
         elif cell_type == "NASCell":
-            if type(hidden_num) is list and len(hidden_num)==layer_num:
-                cells = [tf.contrib.rnn.NASCell(num) for num in hidden_num]
+            if type(hidden_size) is list and len(hidden_size)==layer_num:
+                cells = [tf.contrib.rnn.NASCell(num) for num in hidden_size]
             else:
-                cells = [tf.contrib.rnn.NASCell(hidden_num) for num in xrange(layer_num) ]
+                cells = [tf.contrib.rnn.NASCell(hidden_size) for num in xrange(layer_num) ]
         elif cell_type == "ConvCell":
             #for vedio process
-            if type(hidden_num) is list and len(hidden_num)==layer_num:
-                cells = [tf.contrib.rnn.ConvLSTMCell(num) for num in hidden_num]
+            if type(hidden_size) is list and len(hidden_size)==layer_num:
+                cells = [tf.contrib.rnn.ConvLSTMCell(num) for num in hidden_size]
             else:
-                cells = [tf.contrib.rnn.ConvLSTMCell(hidden_num) for num in xrange(layer_num) ]
+                cells = [tf.contrib.rnn.ConvLSTMCell(hidden_size) for num in xrange(layer_num) ]
 
         return  cells
 

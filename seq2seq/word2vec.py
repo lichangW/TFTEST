@@ -10,7 +10,8 @@ CONV_MARK='M'
 
 EOS="_EOS_" # end mark
 SOS="_SOS_" # start mark
-UNK="_UNK_" #unkown word
+UNK="_UNK_" # unkown word
+PAD="_PAD_" # padding for empty place
 
 convs_path = "/Users/cj/workspace/TFTEST/seq2seq/chinese2english/dgk_lost_conv/results"
 vocab_list = "data/vocab.list"
@@ -65,6 +66,7 @@ class vocabConverter(object):
 
             vob_count_list.append((EOS,len(vob_count_list)))
             vob_count_list.append((SOS,len(vob_count_list)))
+            vob_count_list.append((PAD,len(vob_count_list)))
             self._vocab=[x[0] for x in vob_count_list]
             self._convs=convs
             self._word2code={word:code for code,word in enumerate(self._vocab)}
@@ -97,6 +99,10 @@ class vocabConverter(object):
 
         return self._word2code[SOS]
 
+    def PAD_code(self):
+
+        return self._word2code[PAD]
+
     def text2codes(self,text):
         codes=[]
         for word in text:
@@ -108,6 +114,8 @@ class vocabConverter(object):
         for code in codes:
             text.append(self._code2word(code))
         return text
+    def vob_size(self):
+        return len(self._vocab)+1
 
     def batch_generator(self,batch_size):
         #先写网络
