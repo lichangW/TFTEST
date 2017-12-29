@@ -8,6 +8,9 @@ logging.basicConfig(level=logging.DEBUG,stream=logging.StreamHandler)
 PARAGRAPH_MARK='E'
 CONV_MARK='M'
 
+EOS="_EOS_" # end mark
+SOS="_SOS_" # start mark
+UNK="_UNK_" #unkown word
 
 convs_path = "/Users/cj/workspace/TFTEST/seq2seq/chinese2english/dgk_lost_conv/results"
 vocab_list = "data/vocab.list"
@@ -60,13 +63,15 @@ class vocabConverter(object):
             if len(vob_count_list) > vocab_size:
                 vob_count_list=vob_count_list[:vocab_size]
 
+            vob_count_list.append((EOS,len(vob_count_list)))
+            vob_count_list.append((SOS,len(vob_count_list)))
             self._vocab=[x[0] for x in vob_count_list]
             self._convs=convs
             self._word2code={word:code for code,word in enumerate(self._vocab)}
             self._code2word=dict(enumerate(self._vocab))
 
             with open(vocab_list_file,"wb") as f:
-                pickle.dump(convs,f)
+                pickle.dump(self._vocab,f)
         except Exception as _e:
             logging.error("unexpected text conv error:%s ",str(_e),traceback.format_exc())
             return
@@ -82,7 +87,15 @@ class vocabConverter(object):
 
         if code in self._code2word:
             return self._code2word[code]
-        return "<unk>"
+        return self.UNK
+
+    def EOS_code(self):
+
+        return self._word2code[EOS]
+
+    def SOS_code(self):
+
+        return self._word2code[SOS]
 
     def text2codes(self,text):
         codes=[]
