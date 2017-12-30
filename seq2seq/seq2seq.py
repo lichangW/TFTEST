@@ -21,6 +21,7 @@ class HiCJ(object):
     def __init__(self,vocab_size,data_generator,**encoder_params,**decoder_params,**hyper_params):
 
         self.default_hidden_size = 128
+        self.model=None
 
         self.encoder_params = encoder_params  ##  src_vob_size,src_cell_type
         self.decoder_params = decoder_params  ##  trg_vob_size
@@ -53,20 +54,20 @@ class HiCJ(object):
             self.model=self.saver.restore(session,latest_ckpt)
 
         with tf.variable_scope("model") as scope:
-        if self.MODE_EVAL or self.MODE_INFERENCE:
-            tf
-        if self.MODE_TRAINING:
-            if self.model is not  None:
-                self.encoder_inputs =  tf.get_variable("encoder_inputs",shape=tf.TensorShape([self.batch_size,None]),dtype=tf.float32)
-            elif:
-                self.encoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]),name="encoder_inputs")
-                self.encoder_sequence_length = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]),name="encoder_sequence_length")
-                self.decoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]))
-                self.decoder_sequence_length =  tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]))
+            if self.model is not None:
+                self.encoder_inputs = tf.get_variable("encoder_inputs", shape=tf.TensorShape([self.batch_size, None]),
+                                                  dtype=tf.float32)
+            if (self.MODE_EVAL or self.MODE_INFERENCE) and self.model is None:
+                raise Exception("no available model restored")
+            if self.MODE_TRAINING:
+                    self.encoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]),name="encoder_inputs")
+                    self.encoder_sequence_length = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]),name="encoder_sequence_length")
+                    self.decoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]))
+                    self.decoder_sequence_length =  tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]))
 
-                session.run(tf.local_variables_initializer())
-                session.run(tf.global_variables_initializer())
-                session.run(tf.tables_initializer())
+                    session.run(tf.local_variables_initializer())
+                    session.run(tf.global_variables_initializer())
+                    session.run(tf.tables_initializer())
 
     def _build_encoder(self):
         embedding_size = self.embedding_size
