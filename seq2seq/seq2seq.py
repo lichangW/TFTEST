@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import tensorflow as tf
 import numpy as np
 
@@ -36,38 +38,50 @@ class HiCJ(object):
         self.MODE_EVAL=False
         self.MODE_INFERENCE=False
 
-        self.Build_model()
+        tf.reset_default_graph()
+        self._build_model()   ## 如果只是restore 变量，则每次都要先build model然后restore. 如果不build 模型，则需要先tf.train.import_meta_graph 载入模型
 
-        self.saver = tf.train.Saver(tf.global_variables())
+        self.saver = tf.train.Saver()
 
     def Training(self):
-        self.Build_model()
-        pass
-    def Eval(self):
-        pass
-    def Inference(self):
-        pass
-    def Build_model(self,session,model_dir):
+        self.sesson=tf.Session()
+        with self.sesson as sess:
 
+            sess.run(tf.local_variables_initializer())
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.tables_initializer())
+
+
+        pass
+    def Eval(self, model_dir):
+
+        self._model_loader(model_dir)
+        pass
+
+    def Inference(self, model_dir):
+
+        self._model_loader(model_dir)
+        pass
+
+    def _model_loader(self,model_dir):
+        self.sesson=tf.Session()
         latest_ckpt = tf.train.latest_checkpoint(model_dir)
         if latest_ckpt is not None:
-            self.model=self.saver.restore(session,latest_ckpt)
+            self.model = self.saver.restore(self.sesson, latest_ckpt)
+        else:
+            raise Exception("load model failed...")
+
+    def _build_model(self,session,model_dir):
 
         with tf.variable_scope("model") as scope:
-            if self.model is not None:
-                self.encoder_inputs = tf.get_variable("encoder_inputs", shape=tf.TensorShape([self.batch_size, None]),
-                                                  dtype=tf.float32)
-            if (self.MODE_EVAL or self.MODE_INFERENCE) and self.model is None:
-                raise Exception("no available model restored")
-            if self.MODE_TRAINING:
-                    self.encoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]),name="encoder_inputs")
-                    self.encoder_sequence_length = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]),name="encoder_sequence_length")
-                    self.decoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]))
-                    self.decoder_sequence_length =  tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]))
+            self.encoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]),name="encoder_inputs")
+            self.encoder_sequence_length = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]),name="encoder_sequence_length")
+            self.decoder_inputs = tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size,None]),name="decoder_inputs")
+            self.decoder_sequence_length =  tf.placeholder(tf.float32,shape=tf.TensorShape([self.batch_size]),name="decoder_sequence_length")
 
-                    session.run(tf.local_variables_initializer())
-                    session.run(tf.global_variables_initializer())
-                    session.run(tf.tables_initializer())
+        en_output,en_state = self._build_encoder()
+        self.de_output,self.de_state = self._build_decoder(en_output,en_state)
+
 
     def _build_encoder(self):
         embedding_size = self.embedding_size
@@ -95,6 +109,11 @@ class HiCJ(object):
             multiCell = tf.contrib.rnn.MultiRNNCell(cells)
             outputs,state = tf.nn.dynamic_rnn(multiCell,decoder_input,initial_state=encode_state ,sequence_length=self.decoder_sequence_length,dtype=tf.dtypes.float32)
             return outputs,state
+
+    def _build_loss(self):
+
+    def _build_optimizer(self):
+
 
     def _build_cells(self,cell_type,hidden_size,layer_num,**kwargs):
 
@@ -133,6 +152,9 @@ class HiCJ(object):
                 cells = [tf.contrib.rnn.ConvLSTMCell(hidden_size) for num in xrange(layer_num) ]
 
         return  cells
+
+
+
 
 def data_generator():
     pass
