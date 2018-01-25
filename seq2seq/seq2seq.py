@@ -51,11 +51,12 @@ class HiCJ(object):
 
         self.saver = tf.train.Saver()
 
-    def Training(self,max_step=100000,eval_freq=100,log_freq=10):
-        ## 每次用测试集eval，若连续20次没有提高，则终止以便于早点发现问题，开始调参重新尝试
+    def Training(self,max_step=100000,eval_freq=50,saver_path="./model/"):
+        ## 每次用测试集eval，若连续10次没有提高，则终止以便于早点发现问题，开始调参重新尝试
 
         self.sesson = tf.Session()
         step = 0
+        eval_step=0
         eval_loss = 0
         eval_x,eval_y,eval_ty=self.generator_eval_data()
 
@@ -87,28 +88,29 @@ class HiCJ(object):
                 print("time:{}/s".format(end_t-start_t))
 
                 if step%eval_freq==0:
-
+                    eval_step += 1
                     fed = {
                         self.encoder_inputs: eval_x,
                         self.target_outputs: eval_ty,
                         self.decoder_inputs: eval_y
                     }
 
-                    final_state, loss, _ = sess.run([self.final_state, self.optimizer, self.loss],
+                    final_state, _loss, _ = sess.run([self.final_state, self.optimizer, self.loss],
                                                     feed_dict=fed)
                     print("eval.....")
                     print("eval loss:{}, last loss:{}".format(loss,eval_loss))
-                    if
+                    if _loss < eval_loss:
 
+                        eval_loss=_loss
+                        eval_step=0
+
+                    if eval_step>10:
+                        print("eval loss {} has no imporovement in 10*{} training steps,stop....".format(eval_loss,eval_freq))
+                        break
                 if step>max_step:
                     break
-        self.saver()
 
-
-
-
-
-
+            self.saver(sess,saver_path,global_step=step)
 
     def Eval(self, model_dir):
 
@@ -207,38 +209,38 @@ class HiCJ(object):
         opt=tf.train.AdamOptimizer(self.learn_rate)
         self.optimizer = opt.apply_gradients(zip(grads,tvars))
 
-def _build_cells(self, cell_type, hidden_size, layer_num, device_id, **kwargs):
-    cells = []
-    Cell = None
-    with tf.device(device_id):
-        if cell_type == "BasicRNNCell":
-            if type(hidden_size) is list and len(hidden_size) == layer_num:
-                cells = [tf.contrib.rnn.BasicRNNCell(num) for num in hidden_size]
-            else:
-                cells = [tf.contrib.rnn.BasicRNNCell(hidden_size) for num in xrange(layer_num)]
-        elif cell_type == "LSTMCell":
-            if type(hidden_size) is list and len(hidden_size) == layer_num:
-                cells = [tf.contrib.rnn.LayerNormBasicLSTMCell(num, self.dropout_keep_prob) for num in hidden_size]
-            else:
-                cells = [tf.contrib.rnn.LayerNormBasicLSTMCell(hidden_size, self.dropout_keep_prob) for num in
-                         xrange(layer_num)]
+    def _build_cells(self, cell_type, hidden_size, layer_num, device_id, **kwargs):
+        cells = []
+        Cell = None
+        with tf.device(device_id):
+            if cell_type == "BasicRNNCell":
+                if type(hidden_size) is list and len(hidden_size) == layer_num:
+                    cells = [tf.contrib.rnn.BasicRNNCell(num) for num in hidden_size]
+                else:
+                    cells = [tf.contrib.rnn.BasicRNNCell(hidden_size) for num in xrange(layer_num)]
+            elif cell_type == "LSTMCell":
+                if type(hidden_size) is list and len(hidden_size) == layer_num:
+                    cells = [tf.contrib.rnn.LayerNormBasicLSTMCell(num, self.dropout_keep_prob) for num in hidden_size]
+                else:
+                    cells = [tf.contrib.rnn.LayerNormBasicLSTMCell(hidden_size, self.dropout_keep_prob) for num in
+                             xrange(layer_num)]
 
-        elif cell_type == "GRUCell":
-            if type(hidden_size) is list and len(hidden_size) == layer_num:
-                cells = [tf.contrib.rnn.GRUCell(num) for num in hidden_size]
-            else:
-                cells = [tf.contrib.rnn.GRUCell(hidden_size) for num in xrange(layer_num)]
-        elif cell_type == "NASCell":
-            if type(hidden_size) is list and len(hidden_size) == layer_num:
-                cells = [tf.contrib.rnn.NASCell(num) for num in hidden_size]
-            else:
-                cells = [tf.contrib.rnn.NASCell(hidden_size) for num in xrange(layer_num)]
-        elif cell_type == "ConvCell":
-            # convCell and gridCell for vedio process,
-            if type(hidden_size) is list and len(hidden_size) == layer_num:
-                cells = [tf.contrib.rnn.ConvLSTMCell(num) for num in hidden_size]
-            else:
-                cells = [tf.contrib.rnn.ConvLSTMCell(hidden_size) for num in xrange(layer_num)]
+            elif cell_type == "GRUCell":
+                if type(hidden_size) is list and len(hidden_size) == layer_num:
+                    cells = [tf.contrib.rnn.GRUCell(num) for num in hidden_size]
+                else:
+                    cells = [tf.contrib.rnn.GRUCell(hidden_size) for num in xrange(layer_num)]
+            elif cell_type == "NASCell":
+                if type(hidden_size) is list and len(hidden_size) == layer_num:
+                    cells = [tf.contrib.rnn.NASCell(num) for num in hidden_size]
+                else:
+                    cells = [tf.contrib.rnn.NASCell(hidden_size) for num in xrange(layer_num)]
+            elif cell_type == "ConvCell":
+                # convCell and gridCell for vedio process,
+                if type(hidden_size) is list and len(hidden_size) == layer_num:
+                    cells = [tf.contrib.rnn.ConvLSTMCell(num) for num in hidden_size]
+                else:
+                    cells = [tf.contrib.rnn.ConvLSTMCell(hidden_size) for num in xrange(layer_num)]
 
-    return cells
+        return cells
 
